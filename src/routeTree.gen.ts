@@ -13,6 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppCampaignRouteImport } from './routes/app.campaign'
+import { Route as AppMaternalRouteImport } from './routes/app.maternal'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppTranslateRouteImport } from './routes/app.translate'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,16 +38,44 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppCampaignRoute = AppCampaignRouteImport.update({
+  id: '/campaign',
+  path: '/campaign',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppMaternalRoute = AppMaternalRouteImport.update({
+  id: '/maternal',
+  path: '/maternal',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppTranslateRoute = AppTranslateRouteImport.update({
+  id: '/translate',
+  path: '/translate',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/campaign': typeof AppCampaignRoute
+  '/app/maternal': typeof AppMaternalRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/translate': typeof AppTranslateRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app/campaign': typeof AppCampaignRoute
+  '/app/maternal': typeof AppMaternalRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/translate': typeof AppTranslateRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -51,14 +83,42 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/campaign': typeof AppCampaignRoute
+  '/app/maternal': typeof AppMaternalRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/translate': typeof AppTranslateRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/auth' | '/app/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/app/campaign'
+    | '/app/maternal'
+    | '/app/settings'
+    | '/app/translate'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/app'
-  id: '__root__' | '/' | '/app' | '/auth' | '/app/'
+  to:
+    | '/'
+    | '/auth'
+    | '/app/campaign'
+    | '/app/maternal'
+    | '/app/settings'
+    | '/app/translate'
+    | '/app'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/app/campaign'
+    | '/app/maternal'
+    | '/app/settings'
+    | '/app/translate'
+    | '/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -97,14 +157,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/app/campaign': {
+      id: '/app/campaign'
+      path: '/campaign'
+      fullPath: '/app/campaign'
+      preLoaderRoute: typeof AppCampaignRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/maternal': {
+      id: '/app/maternal'
+      path: '/maternal'
+      fullPath: '/app/maternal'
+      preLoaderRoute: typeof AppMaternalRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/translate': {
+      id: '/app/translate'
+      path: '/translate'
+      fullPath: '/app/translate'
+      preLoaderRoute: typeof AppTranslateRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
 interface AppRouteRouteChildren {
+  AppCampaignRoute: typeof AppCampaignRoute
+  AppMaternalRoute: typeof AppMaternalRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppTranslateRoute: typeof AppTranslateRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppCampaignRoute: AppCampaignRoute,
+  AppMaternalRoute: AppMaternalRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppTranslateRoute: AppTranslateRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
