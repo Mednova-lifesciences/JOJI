@@ -25,4 +25,3 @@ export function MedicalDisclaimer() {
     </p>
   );
 }
-}

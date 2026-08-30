@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Baby, CalendarDays, CircleHelp, Droplets, HeartPulse, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cycleForecast, formatDate, postpartumFromBirth, pregnancyFromLmp, vaccinationSchedule, BREASTFEEDING_QUESTIONS } from "@/lib/joji";
 import { setTranslatePrefill } from "@/lib/translate-prefill";
 import { WorkspaceHeader, MedicalDisclaimer } from "./workspace-header";
-
-const iso = (date: Date) => date.toISOString().slice(0, 10);
 
 export function MaternalPage() {
   const [lmp, setLmp] = useState(""); const [birth, setBirth] = useState(""); const [dob, setDob] = useState(""); const [lastPeriod, setLastPeriod] = useState(""); const [cycle, setCycle] = useState("28"); const [period, setPeriod] = useState("5");
@@ -26,7 +24,7 @@ export function MaternalPage() {
     </Tabs><div className="mt-8"><MedicalDisclaimer /></div></div></div>;
 }
 
-function ToolCard({ icon: Icon, title, description, children }: { icon: typeof HeartPulse; title: string; description: string; children: React.ReactNode }) { return <section className="surface mt-6 max-w-5xl p-6 sm:p-8"><div className="flex items-start gap-4"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary text-teal"><Icon className="size-5" /></span><div><p className="label-mono text-muted-foreground">Calculator</p><h2 className="mt-1 text-2xl font-semibold">{title}</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{description}</p></div></div><div className="mt-7">{children}</div></section>; }
+function ToolCard({ icon: Icon, title, description, children }: { icon: typeof HeartPulse; title: string; description: string; children: ReactNode }) { return <section className="surface mt-6 max-w-5xl p-6 sm:p-8"><div className="flex items-start gap-4"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary text-teal"><Icon className="size-5" /></span><div><p className="label-mono text-muted-foreground">Calculator</p><h2 className="mt-1 text-2xl font-semibold">{title}</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{description}</p></div></div><div className="mt-7">{children}</div></section>; }
 function DateField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <div className="max-w-xs space-y-2"><Label>{label}</Label><Input type="date" value={value} onChange={(e) => onChange(e.target.value)} /></div>; }
 function NumberField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <div className="space-y-2"><Label>{label}</Label><Input type="number" min="1" max="60" value={value} onChange={(e) => onChange(e.target.value)} /></div>; }
 function ResultGrid({ items }: { items: string[][] }) { return <div className="mt-6 grid gap-3 sm:grid-cols-3">{items.map(([label, value]) => <div key={label} className="rounded-xl bg-secondary/70 p-4"><p className="label-mono text-muted-foreground">{label}</p><p className="mt-2 font-display text-lg font-semibold text-teal">{value}</p></div>)}</div>; }

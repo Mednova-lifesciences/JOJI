@@ -46,7 +46,7 @@ export function TranslatePage() {
     if (prefill) setPatientDraft(prefill);
   }, []);
 
-  const patientName = LANGUAGE_NAMES[language];
+  const patientName = LANGUAGE_NAMES[language] ?? language;
 
   async function send(side: "patient" | "doctor", draft?: string) {
     const text = (draft ?? (side === "patient" ? patientDraft : doctorDraft)).trim();
