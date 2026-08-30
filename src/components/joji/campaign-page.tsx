@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Copy, FileText, Loader2, Megaphone, Upload, Download, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export function CampaignPage() {
     finally { setBusy(false); }
   }
 
-  function saveLead(event: React.FormEvent<HTMLFormElement>) {
+  function saveLead(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try { localStorage.setItem("joji.campaign.lead", JSON.stringify(Object.fromEntries(form))); } catch { /* best effort */ }

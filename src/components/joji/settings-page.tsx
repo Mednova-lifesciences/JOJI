@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Check, Languages, Save, Settings2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ export function SettingsPage() {
   const { user, updateUser } = useAuth();
   const [saved, setSaved] = useState(false);
   if (!user) return null;
-  function save(event: React.FormEvent<HTMLFormElement>) {
+  function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = new FormData(event.currentTarget);
     updateUser({ fullName: String(form.get("fullName")), phone: String(form.get("phone")), organization: String(form.get("organization")), orgType: String(form.get("orgType")), preferredLanguage: String(form.get("preferredLanguage")) });
     setSaved(true); toast.success("Settings saved"); window.setTimeout(() => setSaved(false), 1600);
