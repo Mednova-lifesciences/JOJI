@@ -1,6 +1,6 @@
 import type { CampaignKit } from "./ai.types";
 
-const MODEL = "openai/gpt-5.5";
+const MODEL = "gpt-4o-mini";
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "English",
   yo: "Yorùbá",
@@ -53,17 +53,16 @@ async function readResponseText(response: Response) {
 }
 
 async function callModel(instructions: string, input: string): Promise<string> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
+  const apiKey = process.env["OPENAI_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured on this server.");
 
   let response: Response | null = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+    response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Lovable-API-Key": apiKey,
-        "X-Lovable-AIG-SDK": "fetch",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: MODEL,
@@ -71,8 +70,6 @@ async function callModel(instructions: string, input: string): Promise<string> {
         input: [{ role: "user", content: [{ type: "input_text", text: input }] }],
         stream: true,
         store: false,
-        reasoning: { effort: "medium", summary: "auto" },
-        include: ["reasoning.encrypted_content"],
       }),
     });
     if (response.ok) break;
@@ -90,13 +87,9 @@ async function callModel(instructions: string, input: string): Promise<string> {
     if (response?.status === 429)
       throw new Error("Too many AI requests right now. Please wait a moment and try again.");
     if (response?.status === 402)
-      throw new Error(
-        body || "AI credits are exhausted for this workspace. Please top up to continue.",
-      );
+      throw new Error(body || "AI credits are exhausted. Please top up your OpenAI account.");
     if (response?.status === 403)
-      throw new Error(
-        body || "AI access is blocked for this workspace. Please contact your workspace admin.",
-      );
+      throw new Error(body || "AI access is blocked. Please check your OpenAI account status.");
     throw new Error(
       `AI request failed (${response?.status ?? "unknown"}). ${body?.slice(0, 200) ?? ""}`,
     );
