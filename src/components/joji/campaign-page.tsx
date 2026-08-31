@@ -1,6 +1,16 @@
 import { useServerFn } from "@tanstack/react-start";
-import { useState, type FormEvent } from "react";
-import { Copy, FileText, Loader2, Megaphone, Upload, Download, Check } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  Copy,
+  FileText,
+  History,
+  Loader2,
+  Megaphone,
+  Upload,
+  Download,
+  Check,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +30,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { generateCampaign } from "@/lib/ai.functions";
 import type { CampaignKit } from "@/lib/ai.types";
-import { ORG_TYPES } from "@/lib/joji";
+import { deleteCampaign, listCampaigns, saveCampaign, type SavedCampaign } from "@/lib/campaigns";
+import { useAuth } from "@/lib/auth";
+import { formatDateTime, ORG_TYPES } from "@/lib/joji";
+import { cn } from "@/lib/utils";
 import { WorkspaceHeader } from "./workspace-header";
 
 export function CampaignPage() {
+  const { user } = useAuth();
   const generate = useServerFn(generateCampaign);
   const [text, setText] = useState("");
   const [topic, setTopic] = useState("");
@@ -35,6 +67,28 @@ export function CampaignPage() {
   const [leadOpen, setLeadOpen] = useState(false);
   const [leadSaved, setLeadSaved] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [campaigns, setCampaigns] = useState<SavedCampaign[]>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(true);
+  const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    listCampaigns()
+      .then((rows) => {
+        if (active) setCampaigns(rows);
+      })
+      .catch((error: unknown) => {
+        if (active)
+          toast.error(error instanceof Error ? error.message : "Could not load campaigns.");
+      })
+      .finally(() => {
+        if (active) setCampaignsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function requestGeneration() {
     if (text.trim().length < 20) {
@@ -53,18 +107,56 @@ export function CampaignPage() {
   }
 
   async function runGeneration() {
+    if (!user) return;
     setBusy(true);
     try {
-      setKit(
-        await generate({
-          data: { text, topic: topic || undefined, audience: audience || undefined },
-        }),
-      );
+      const generated = await generate({
+        data: { text, topic: topic || undefined, audience: audience || undefined },
+      });
+      setKit(generated);
+      setActiveCampaignId(null);
       toast.success("Campaign kit ready for review");
+      try {
+        const saved = await saveCampaign({
+          sourceText: text,
+          ...(topic ? { topic } : {}),
+          ...(audience ? { audience } : {}),
+          kit: generated,
+          createdBy: user.id,
+        });
+        setCampaigns((current) => [saved, ...current]);
+        setActiveCampaignId(saved.id);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Generated, but could not save to history.",
+        );
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Campaign generation failed.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  function openCampaign(campaign: SavedCampaign) {
+    setKit(campaign.kit);
+    setText(campaign.sourceText);
+    setTopic(campaign.topic ?? "");
+    setAudience(campaign.audience ?? "");
+    setActiveCampaignId(campaign.id);
+    setHistoryOpen(false);
+  }
+
+  async function handleDeleteCampaign(id: string) {
+    try {
+      await deleteCampaign(id);
+      setCampaigns((current) => current.filter((campaign) => campaign.id !== id));
+      if (activeCampaignId === id) {
+        setActiveCampaignId(null);
+      }
+      toast.success("Campaign deleted");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete this campaign.");
     }
   }
 
@@ -137,11 +229,16 @@ export function CampaignPage() {
         title="One source. Every community."
         description="Create a complete campaign kit from one source document, then review each channel and language before it reaches the public."
         action={
-          kit ? (
-            <Button variant="outline" onClick={() => void downloadPdf()}>
-              <Download className="size-4" /> Download PDF
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setHistoryOpen(true)}>
+              <History className="size-4" /> Past campaigns
             </Button>
-          ) : undefined
+            {kit && (
+              <Button variant="outline" onClick={() => void downloadPdf()}>
+                <Download className="size-4" /> Download PDF
+              </Button>
+            )}
+          </div>
         }
       />
       <div className="space-y-8 px-5 py-6 sm:px-8 lg:px-10">
@@ -270,6 +367,69 @@ export function CampaignPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent side="left" className="flex w-full flex-col sm:max-w-sm">
+          <SheetHeader>
+            <SheetTitle>Past campaigns</SheetTitle>
+            <SheetDescription>Campaign kits saved by your organisation.</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 flex-1 space-y-2 overflow-y-auto">
+            {campaignsLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+            {!campaignsLoading && campaigns.length === 0 && (
+              <p className="text-sm text-muted-foreground">No saved campaigns yet.</p>
+            )}
+            {campaigns.map((campaign) => (
+              <div
+                key={campaign.id}
+                className={cn(
+                  "group flex items-center justify-between gap-2 rounded-xl border border-border p-3 hover:bg-secondary/60",
+                  activeCampaignId === campaign.id && "border-teal bg-secondary/60",
+                )}
+              >
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 cursor-pointer text-left"
+                  onClick={() => openCampaign(campaign)}
+                >
+                  <p className="truncate text-sm font-medium">{campaign.title}</p>
+                  <p className="label-mono text-muted-foreground">
+                    {formatDateTime(campaign.createdAt)}
+                  </p>
+                </button>
+                {campaign.createdBy === user?.id && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100"
+                        aria-label="Delete campaign"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this campaign?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          &quot;{campaign.title}&quot; will be permanently deleted.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => void handleDeleteCampaign(campaign.id)}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
