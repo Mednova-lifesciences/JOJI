@@ -123,9 +123,7 @@ export function SettingsPage() {
         </section>
 
         <div className="flex items-center justify-between border-t border-border pt-5">
-          <p className="text-xs text-muted-foreground">
-            Your profile is stored securely in this demo browser.
-          </p>
+          <p className="text-xs text-muted-foreground">Changes save to your Supabase profile.</p>
           <Button type="submit">
             {saved ? <Check className="size-4" /> : <Save className="size-4" />}{" "}
             {saved ? "Saved" : "Save changes"}

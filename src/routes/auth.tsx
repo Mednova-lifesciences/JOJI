@@ -63,7 +63,7 @@ function AuthPage() {
     const form = new FormData(e.currentTarget);
     setBusy(true);
     try {
-      await signUp({
+      const { needsEmailConfirmation } = await signUp({
         fullName: String(form.get("fullName")),
         email: String(form.get("email")),
         password: String(form.get("password")),
@@ -71,8 +71,12 @@ function AuthPage() {
         organization: String(form.get("organization") || ""),
         phone: String(form.get("phone")),
       });
-      toast.success("Workspace created");
-      navigate({ to: "/app/translate" });
+      if (needsEmailConfirmation) {
+        toast.success("Check your email to confirm your account, then log in.");
+      } else {
+        toast.success("Workspace created");
+        navigate({ to: "/app/translate" });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not create the account.");
     } finally {
@@ -102,7 +106,7 @@ function AuthPage() {
           </p>
         </div>
         <p className="flex items-center gap-2 text-xs text-cream/60">
-          <ShieldCheck className="size-4" /> Demo auth stores accounts on this device only.
+          <ShieldCheck className="size-4" /> Secured by Supabase Auth.
         </p>
       </aside>
 
@@ -216,11 +220,6 @@ function AuthPage() {
                 </form>
               </TabsContent>
             </Tabs>
-
-            <p className="mt-6 text-xs text-muted-foreground">
-              Demo auth: accounts are stored in this browser. Swap <code>src/lib/auth.tsx</code> for
-              Supabase Auth or Clerk when you go live.
-            </p>
           </div>
         </div>
       </main>

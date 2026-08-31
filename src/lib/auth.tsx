@@ -1,9 +1,8 @@
 /**
- * Mock auth for the JOJI demo.
- *
- * Accounts and the "JWT" live in localStorage. To move to a real provider
- * (Supabase Auth, Clerk, Auth0), replace `signIn` / `signUp` / `signOut` with
- * provider calls — the rest of the app only depends on this context's shape.
+ * Supabase-backed auth for JOJI. Session state comes from Supabase Auth;
+ * profile fields (name, org, phone, preferred language) live in the
+ * `profiles` table (see supabase/migrations) and are joined onto the
+ * Supabase user to build a `JojiUser`.
  */
 import {
   createContext,
@@ -14,6 +13,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { toast } from "sonner";
+import { supabase } from "./supabase";
 
 export type JojiUser = {
   id: string;
@@ -25,106 +27,149 @@ export type JojiUser = {
   preferredLanguage: string;
 };
 
-type StoredAccount = JojiUser & { password: string };
+type ProfileRow = {
+  id: string;
+  full_name: string;
+  org_type: string;
+  organization: string | null;
+  phone: string;
+  preferred_language: string;
+};
+
+type SignUpInput = {
+  fullName: string;
+  email: string;
+  password: string;
+  orgType: string;
+  organization?: string;
+  phone: string;
+  preferredLanguage?: string;
+};
 
 type AuthState = {
   user: JojiUser | null;
   ready: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (
-    input: Omit<StoredAccount, "id" | "preferredLanguage"> & { preferredLanguage?: string },
-  ) => Promise<void>;
+  /** Returns needsEmailConfirmation: true when the project requires the user to click a confirmation link before a session exists. */
+  signUp: (input: SignUpInput) => Promise<{ needsEmailConfirmation: boolean }>;
   signOut: () => void;
   updateUser: (patch: Partial<JojiUser>) => void;
 };
 
-const ACCOUNTS_KEY = "joji.accounts";
-const SESSION_KEY = "joji.session";
-
 const AuthContext = createContext<AuthState | null>(null);
 
-function readAccounts(): StoredAccount[] {
-  try {
-    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? "[]") as StoredAccount[];
-  } catch {
-    return [];
-  }
-}
-
-function writeAccounts(accounts: StoredAccount[]) {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-}
-
-/** Stand-in for a signed JWT — base64 payload, no verification. */
-function mintToken(user: JojiUser) {
-  return `joji.${btoa(unescape(encodeURIComponent(JSON.stringify({ sub: user.id, iat: Date.now() }))))}`;
+function toJojiUser(session: Session, profile: ProfileRow): JojiUser {
+  return {
+    id: session.user.id,
+    email: session.user.email ?? "",
+    fullName: profile.full_name,
+    orgType: profile.org_type,
+    ...(profile.organization ? { organization: profile.organization } : {}),
+    phone: profile.phone,
+    preferredLanguage: profile.preferred_language,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<JojiUser | null>(null);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      if (raw) setUser(JSON.parse(raw).user as JojiUser);
-    } catch {
-      /* ignore corrupt session */
+  const loadUser = useCallback(async (session: Session | null) => {
+    if (!session) {
+      setUser(null);
+      return;
     }
-    setReady(true);
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single<ProfileRow>();
+    if (error || !profile) {
+      setUser(null);
+      return;
+    }
+    setUser(toJojiUser(session, profile));
   }, []);
 
-  const persist = useCallback((next: JojiUser | null) => {
-    setUser(next);
-    if (next)
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ token: mintToken(next), user: next }));
-    else localStorage.removeItem(SESSION_KEY);
-  }, []);
+  useEffect(() => {
+    let active = true;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      void loadUser(session).finally(() => {
+        if (active) setReady(true);
+      });
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [loadUser]);
 
   const signIn = useCallback<AuthState["signIn"]>(
     async (email, password) => {
-      const account = readAccounts().find(
-        (a) => a.email.toLowerCase() === email.trim().toLowerCase(),
-      );
-      if (!account || account.password !== password)
-        throw new Error("Email or password is incorrect.");
-      const { password: _pw, ...safe } = account;
-      persist(safe);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) throw new Error(error.message);
+      await loadUser(data.session);
     },
-    [persist],
+    [loadUser],
   );
 
   const signUp = useCallback<AuthState["signUp"]>(
     async (input) => {
-      const accounts = readAccounts();
-      if (accounts.some((a) => a.email.toLowerCase() === input.email.trim().toLowerCase()))
-        throw new Error("An account with this email already exists.");
-      const account: StoredAccount = {
-        ...input,
+      const { data, error } = await supabase.auth.signUp({
         email: input.email.trim(),
-        id: crypto.randomUUID(),
-        preferredLanguage: input.preferredLanguage ?? "yo",
-      };
-      writeAccounts([...accounts, account]);
-      const { password: _pw, ...safe } = account;
-      persist(safe);
+        password: input.password,
+        options: {
+          data: {
+            full_name: input.fullName,
+            org_type: input.orgType,
+            organization: input.organization ?? "",
+            phone: input.phone,
+            preferred_language: input.preferredLanguage ?? "yo",
+          },
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (!data.session) return { needsEmailConfirmation: true };
+      await loadUser(data.session);
+      return { needsEmailConfirmation: false };
     },
-    [persist],
+    [loadUser],
   );
 
-  const updateUser = useCallback(
-    (patch: Partial<JojiUser>) => {
-      if (!user) return;
-      const next = { ...user, ...patch };
-      writeAccounts(readAccounts().map((a) => (a.id === next.id ? { ...a, ...patch } : a)));
-      persist(next);
-    },
-    [persist, user],
-  );
+  const signOut = useCallback(() => {
+    void supabase.auth.signOut();
+  }, []);
+
+  const updateUser = useCallback((patch: Partial<JojiUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      void supabase
+        .from("profiles")
+        .update({
+          full_name: next.fullName,
+          org_type: next.orgType,
+          organization: next.organization ?? null,
+          phone: next.phone,
+          preferred_language: next.preferredLanguage,
+        })
+        .eq("id", next.id)
+        .then(({ error }) => {
+          if (error) toast.error(`Could not save changes: ${error.message}`);
+        });
+      return next;
+    });
+  }, []);
 
   const value = useMemo<AuthState>(
-    () => ({ user, ready, signIn, signUp, signOut: () => persist(null), updateUser }),
-    [user, ready, signIn, signUp, persist, updateUser],
+    () => ({ user, ready, signIn, signUp, signOut, updateUser }),
+    [user, ready, signIn, signUp, signOut, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
