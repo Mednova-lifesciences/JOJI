@@ -32,3 +32,6 @@ dist-ssr
 *.sw?
 .vercel
 .env*
+
+# Local Playwright MCP debug artifacts
+.playwright-mcp/

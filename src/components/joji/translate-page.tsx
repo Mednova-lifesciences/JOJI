@@ -597,16 +597,22 @@ function ConversationPanel({
             aria-label={`${language} message`}
             disabled={disabled}
           />
-          <div className="flex flex-col gap-2">
-            <Button
-              size="icon"
-              variant={listening ? "destructive" : "outline"}
-              onClick={onMic}
-              disabled={disabled}
-              aria-label={listening ? "Stop listening" : "Start voice input"}
-            >
-              {listening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-            </Button>
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative">
+              {listening && (
+                <span className="absolute inset-0 animate-ping rounded-full bg-destructive/60" />
+              )}
+              <Button
+                size="icon"
+                variant={listening ? "destructive" : "outline"}
+                onClick={onMic}
+                disabled={disabled}
+                aria-label={listening ? "Stop listening" : "Start voice input"}
+                className={cn("relative size-14 rounded-full", listening && "animate-pulse")}
+              >
+                {listening ? <MicOff className="size-6" /> : <Mic className="size-6" />}
+              </Button>
+            </div>
             <Button
               size="icon"
               onClick={onSend}

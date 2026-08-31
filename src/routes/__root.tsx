@@ -83,16 +83,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "JOJI by MedNova Lifesciences: real-time multilingual translation and campaign tools for Nigerian hospitals, NGOs and health workers.",
+          "JOJI by MedNova Lifesciences turns every consultation into a shared conversation — live translation in Yorùbá, Igbo, Hausa and Nigerian Pidgin, AI campaign kits, and maternal health tools built for Nigerian hospitals, NGOs and community health workers.",
       },
       { name: "author", content: "MedNova Lifesciences" },
-      { property: "og:title", content: "JOJI — Multilingual health communication" },
+      { name: "theme-color", content: "#12333e" },
+      { property: "og:site_name", content: "JOJI" },
+      { property: "og:title", content: "JOJI — Every patient deserves to be understood" },
       {
         property: "og:description",
-        content: "Real-time health translation in Yorùbá, Igbo, Hausa and Nigerian Pidgin.",
+        content:
+          "Live consultation translation, AI-generated campaign kits and maternal health tools for Nigerian hospitals, NGOs and health workers — in Yorùbá, Igbo, Hausa and Nigerian Pidgin.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://joji.mednovalife.com" },
+      { property: "og:locale", content: "en_NG" },
+      { property: "og:image", content: "https://joji.mednovalife.com/og-image.png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "JOJI by MedNova Lifesciences" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "JOJI — Every patient deserves to be understood" },
+      {
+        name: "twitter:description",
+        content:
+          "Live consultation translation, AI campaign kits and maternal health tools for Nigerian hospitals, NGOs and health workers.",
+      },
+      { name: "twitter:image", content: "https://joji.mednovalife.com/og-image.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
