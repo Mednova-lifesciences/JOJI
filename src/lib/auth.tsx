@@ -5,7 +5,15 @@
  * (Supabase Auth, Clerk, Auth0), replace `signIn` / `signUp` / `signOut` with
  * provider calls — the rest of the app only depends on this context's shape.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type JojiUser = {
   id: string;
@@ -23,7 +31,9 @@ type AuthState = {
   user: JojiUser | null;
   ready: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (input: Omit<StoredAccount, "id" | "preferredLanguage"> & { preferredLanguage?: string }) => Promise<void>;
+  signUp: (
+    input: Omit<StoredAccount, "id" | "preferredLanguage"> & { preferredLanguage?: string },
+  ) => Promise<void>;
   signOut: () => void;
   updateUser: (patch: Partial<JojiUser>) => void;
 };
@@ -66,14 +76,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const persist = useCallback((next: JojiUser | null) => {
     setUser(next);
-    if (next) localStorage.setItem(SESSION_KEY, JSON.stringify({ token: mintToken(next), user: next }));
+    if (next)
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ token: mintToken(next), user: next }));
     else localStorage.removeItem(SESSION_KEY);
   }, []);
 
   const signIn = useCallback<AuthState["signIn"]>(
     async (email, password) => {
-      const account = readAccounts().find((a) => a.email.toLowerCase() === email.trim().toLowerCase());
-      if (!account || account.password !== password) throw new Error("Email or password is incorrect.");
+      const account = readAccounts().find(
+        (a) => a.email.toLowerCase() === email.trim().toLowerCase(),
+      );
+      if (!account || account.password !== password)
+        throw new Error("Email or password is incorrect.");
       const { password: _pw, ...safe } = account;
       persist(safe);
     },
