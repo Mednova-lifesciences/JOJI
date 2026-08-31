@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
-import { ORG_TYPES, PATIENT_LANGUAGES } from "@/lib/joji";
+import { PATIENT_LANGUAGES } from "@/lib/joji";
 import { WorkspaceHeader } from "./workspace-header";
 
 export function SettingsPage() {
@@ -27,8 +27,6 @@ export function SettingsPage() {
     updateUser({
       fullName: String(form.get("fullName")),
       phone: String(form.get("phone")),
-      organization: String(form.get("organization")),
-      orgType: String(form.get("orgType")),
       preferredLanguage: String(form.get("preferredLanguage")),
     });
     setSaved(true);
@@ -97,28 +95,17 @@ export function SettingsPage() {
           </div>
           <div className="mt-7 grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="organization">Organisation name</Label>
-              <Input id="organization" name="organization" defaultValue={user.organization} />
+              <Label>Organisation name</Label>
+              <Input value={user.organization} disabled />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="orgType">Organisation type</Label>
-              <Select name="orgType" defaultValue={user.orgType}>
-                <SelectTrigger id="orgType">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ORG_TYPES.map((o) => (
-                    <SelectItem key={o} value={o}>
-                      {o}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Organisation type</Label>
+              <Input value={user.orgType} disabled />
             </div>
           </div>
           <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
-            <Languages className="size-3.5 text-teal" /> Team-wide language preferences can be added
-            when connected to a real provider.
+            <Languages className="size-3.5 text-teal" /> Organisation details are set from your work
+            email domain and shared with your teammates — contact support to change them.
           </p>
         </section>
 

@@ -1,8 +1,9 @@
 /**
  * Supabase-backed auth for JOJI. Session state comes from Supabase Auth;
- * profile fields (name, org, phone, preferred language) live in the
- * `profiles` table (see supabase/migrations) and are joined onto the
- * Supabase user to build a `JojiUser`.
+ * profile fields (name, phone, preferred language) live in the `profiles`
+ * table, and organization/org_type are read-only, joined from `profiles.
+ * organization_id -> organizations` (see supabase/migrations) since an
+ * organization is now shared across everyone on the same work email domain.
  */
 import {
   createContext,
@@ -22,7 +23,7 @@ export type JojiUser = {
   fullName: string;
   email: string;
   orgType: string;
-  organization?: string;
+  organization: string;
   phone: string;
   preferredLanguage: string;
 };
@@ -30,10 +31,9 @@ export type JojiUser = {
 type ProfileRow = {
   id: string;
   full_name: string;
-  org_type: string;
-  organization: string | null;
   phone: string;
   preferred_language: string;
+  organizations: { name: string; org_type: string } | null;
 };
 
 type SignUpInput = {
@@ -53,7 +53,7 @@ type AuthState = {
   /** Returns needsEmailConfirmation: true when the project requires the user to click a confirmation link before a session exists. */
   signUp: (input: SignUpInput) => Promise<{ needsEmailConfirmation: boolean }>;
   signOut: () => void;
-  updateUser: (patch: Partial<JojiUser>) => void;
+  updateUser: (patch: Partial<Pick<JojiUser, "fullName" | "phone" | "preferredLanguage">>) => void;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -63,8 +63,8 @@ function toJojiUser(session: Session, profile: ProfileRow): JojiUser {
     id: session.user.id,
     email: session.user.email ?? "",
     fullName: profile.full_name,
-    orgType: profile.org_type,
-    ...(profile.organization ? { organization: profile.organization } : {}),
+    orgType: profile.organizations?.org_type ?? "Hospital",
+    organization: profile.organizations?.name ?? "",
     phone: profile.phone,
     preferredLanguage: profile.preferred_language,
   };
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, full_name, phone, preferred_language, organizations(name, org_type)")
       .eq("id", session.user.id)
       .single<ProfileRow>();
     if (error || !profile) {
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void supabase.auth.signOut();
   }, []);
 
-  const updateUser = useCallback((patch: Partial<JojiUser>) => {
+  const updateUser = useCallback<AuthState["updateUser"]>((patch) => {
     setUser((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...patch };
@@ -154,8 +154,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .update({
           full_name: next.fullName,
-          org_type: next.orgType,
-          organization: next.organization ?? null,
           phone: next.phone,
           preferred_language: next.preferredLanguage,
         })
