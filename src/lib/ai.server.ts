@@ -107,10 +107,10 @@ export async function transcribeWithAi(audio: Blob, lang?: string): Promise<stri
   const form = new FormData();
   const ext = audio.type.includes("mp4") ? "mp4" : audio.type.includes("ogg") ? "ogg" : "webm";
   form.append("file", audio, `chunk.${ext}`);
-  form.append("model", "gpt-4o-transcribe");
-  // gpt-4o-transcribe's `language` param only recognizes a narrow enum of ISO codes and
-  // 400s on others (e.g. "yo"), so bias it with a plain-language prompt instead — OpenAI's
-  // own error for unrecognized codes suggests exactly this.
+  form.append("model", "gpt-transcribe");
+  // The `language` param only recognizes a narrow enum of ISO codes and 400s on others
+  // (e.g. "yo"), so bias it with a plain-language prompt instead — OpenAI's own error for
+  // unrecognized codes suggests exactly this.
   const languageName = lang ? (LANGUAGE_NAMES[lang] ?? lang) : undefined;
   if (languageName) {
     form.append("prompt", `The audio is in ${languageName}. Transcribe it verbatim in ${languageName}.`);
