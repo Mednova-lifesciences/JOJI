@@ -624,7 +624,7 @@ function ConversationPanel({
           </div>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Press Enter to send · Microphone uses your browser's speech recognition
+          Press Enter to send · Microphone records until you tap it again to stop
         </p>
       </div>
     </section>
