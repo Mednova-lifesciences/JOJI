@@ -125,6 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: input.email.trim(),
         password: input.password,
         options: {
+          ...(typeof window !== "undefined"
+            ? { emailRedirectTo: `${window.location.origin}/auth` }
+            : {}),
           data: {
             full_name: input.fullName,
             org_type: input.orgType,

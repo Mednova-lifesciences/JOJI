@@ -100,6 +100,43 @@ async function callModel(instructions: string, input: string): Promise<string> {
   return content;
 }
 
+const TRANSCRIBE_LANGUAGE_HINTS: Record<string, string> = {
+  en: "en",
+  yo: "yo",
+  ig: "ig",
+  ha: "ha",
+};
+
+export async function transcribeWithAi(audio: Blob, lang?: string): Promise<string> {
+  const apiKey = process.env["OPENAI_API_KEY"];
+  if (!apiKey) throw new Error("AI is not configured on this server.");
+
+  const form = new FormData();
+  const ext = audio.type.includes("mp4") ? "mp4" : audio.type.includes("ogg") ? "ogg" : "webm";
+  form.append("file", audio, `chunk.${ext}`);
+  form.append("model", "gpt-4o-mini-transcribe");
+  const hint = lang ? TRANSCRIBE_LANGUAGE_HINTS[lang] : undefined;
+  if (hint) form.append("language", hint);
+
+  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    if (response.status === 429)
+      throw new Error("Too many AI requests right now. Please wait a moment and try again.");
+    if (response.status === 402)
+      throw new Error(body || "AI credits are exhausted. Please top up your OpenAI account.");
+    throw new Error(`Transcription failed (${response.status}). ${body.slice(0, 200)}`);
+  }
+
+  const json = (await response.json()) as { text?: string };
+  return (json.text ?? "").trim();
+}
+
 export async function translateWithAi(text: string, fromLang: string, toLang: string) {
   const target = LANGUAGE_NAMES[toLang] ?? toLang;
   const source = LANGUAGE_NAMES[fromLang] ?? fromLang;

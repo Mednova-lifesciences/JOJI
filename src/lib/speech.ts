@@ -1,95 +1,126 @@
 /**
- * Thin wrappers over the native Web Speech API with graceful degradation.
+ * Mic-driven dictation backed by server-side transcription (OpenAI), since
+ * browser Web Speech API has no reliable support for Yorùbá, Igbo, Hausa or
+ * Nigerian Pidgin. Records continuously (does not auto-stop) by chaining
+ * short MediaRecorder segments on one mic stream; each finished segment is
+ * sent off for transcription while the next segment starts recording.
  */
 import { SPEECH_LOCALES } from "./joji";
 
-type SpeechResultLike = { isFinal: boolean; 0: { transcript: string } };
-type SpeechResultEvent = { resultIndex: number; results: ArrayLike<SpeechResultLike> };
-type SpeechErrorEvent = { error?: string };
-type RecognitionLike = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((event: SpeechResultEvent) => void) | null;
-  onerror: ((event: SpeechErrorEvent) => void) | null;
-  onend: (() => void) | null;
-};
+const CHUNK_MS = 4000;
+const MIN_CHUNK_BYTES = 800;
 
-function getRecognitionCtor(): (new () => RecognitionLike) | null {
-  if (typeof window === "undefined") return null;
-  const speechWindow = window as Window & {
-    SpeechRecognition?: new () => RecognitionLike;
-    webkitSpeechRecognition?: new () => RecognitionLike;
-  };
-  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
+function pickMimeType(): string | undefined {
+  if (typeof MediaRecorder === "undefined") return undefined;
+  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+  return candidates.find((type) => MediaRecorder.isTypeSupported(type));
 }
 
 export function speechRecognitionSupported() {
-  return getRecognitionCtor() !== null;
+  return (
+    typeof navigator !== "undefined" &&
+    typeof navigator.mediaDevices?.getUserMedia === "function" &&
+    typeof MediaRecorder !== "undefined"
+  );
 }
 
 export function speechSynthesisSupported() {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-/**
- * Starts dictation and returns a stop handle.
- * NOTE: browser STT is used here. To route audio through Google Chirp 3 instead,
- * capture the mic with MediaRecorder and POST the blob to a server function that
- * calls your STT provider, then feed the transcript into the same callbacks.
- */
-export function startDictation(opts: {
+type DictationOptions = {
   lang: string;
+  transcribe: (audio: Blob, lang: string) => Promise<string>;
   onInterim?: (text: string) => void;
   onFinal: (text: string) => void;
   onError?: (message: string) => void;
   onEnd?: () => void;
-}) {
-  const Ctor = getRecognitionCtor();
-  if (!Ctor) {
+};
+
+type DictationState = {
+  stopped: boolean;
+  recorder: MediaRecorder | null;
+  timer: ReturnType<typeof setTimeout> | undefined;
+};
+
+function recordSegment(stream: MediaStream, opts: DictationOptions, state: DictationState) {
+  if (state.stopped) {
+    stream.getTracks().forEach((track) => track.stop());
+    opts.onEnd?.();
+    return;
+  }
+
+  const mimeType = pickMimeType();
+  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+  state.recorder = recorder;
+  const chunks: BlobPart[] = [];
+
+  recorder.ondataavailable = (event) => {
+    if (event.data.size > 0) chunks.push(event.data);
+  };
+
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+    if (blob.size >= MIN_CHUNK_BYTES) {
+      opts.onInterim?.("Transcribing…");
+      opts
+        .transcribe(blob, opts.lang)
+        .then((text) => {
+          const trimmed = text.trim();
+          if (trimmed) opts.onFinal(trimmed);
+        })
+        .catch((error: unknown) => {
+          opts.onError?.(error instanceof Error ? error.message : "Voice transcription failed.");
+        })
+        .finally(() => opts.onInterim?.(""));
+    }
+    recordSegment(stream, opts, state);
+  };
+
+  recorder.start();
+  state.timer = setTimeout(() => {
+    try {
+      recorder.stop();
+    } catch {
+      /* already stopped */
+    }
+  }, CHUNK_MS);
+}
+
+/**
+ * Starts continuous dictation and returns a stop handle. Recording keeps
+ * going — chunk after chunk — until the returned function is called; it
+ * never auto-stops on silence.
+ */
+export function startDictation(opts: DictationOptions) {
+  const state: DictationState = { stopped: false, recorder: null, timer: undefined };
+
+  if (!speechRecognitionSupported()) {
     opts.onError?.("Voice input is not supported in this browser. Please type instead.");
     opts.onEnd?.();
     return () => {};
   }
 
-  const recognition = new Ctor();
-  recognition.lang = SPEECH_LOCALES[opts.lang] ?? "en-NG";
-  recognition.continuous = true;
-  recognition.interimResults = true;
-
-  recognition.onresult = (event: SpeechResultEvent) => {
-    let interim = "";
-    for (let i = event.resultIndex; i < event.results.length; i += 1) {
-      const result = event.results[i];
-      if (result.isFinal) opts.onFinal(String(result[0].transcript).trim());
-      else interim += result[0].transcript;
-    }
-    if (interim) opts.onInterim?.(interim);
-  };
-  recognition.onerror = (event: SpeechErrorEvent) => {
-    const code = event.error ?? "unknown";
-    opts.onError?.(
-      code === "not-allowed"
-        ? "Microphone access was blocked. Enable it in your browser settings."
-        : code === "no-speech"
-          ? "No speech was detected. Try again."
-          : "Voice capture failed. Please type instead.",
-    );
-  };
-  recognition.onend = () => opts.onEnd?.();
-
-  try {
-    recognition.start();
-  } catch {
-    opts.onError?.("Could not start the microphone.");
-    opts.onEnd?.();
-  }
+  navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      if (state.stopped) {
+        stream.getTracks().forEach((track) => track.stop());
+        opts.onEnd?.();
+        return;
+      }
+      recordSegment(stream, opts, state);
+    })
+    .catch(() => {
+      opts.onError?.("Microphone access was blocked. Enable it in your browser settings.");
+      opts.onEnd?.();
+    });
 
   return () => {
+    state.stopped = true;
+    clearTimeout(state.timer);
     try {
-      recognition.stop();
+      state.recorder?.stop();
     } catch {
       /* already stopped */
     }

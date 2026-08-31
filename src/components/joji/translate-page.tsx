@@ -67,7 +67,7 @@ import {
   type Conversation,
   type ConversationMessage,
 } from "@/lib/conversations";
-import { translateText } from "@/lib/ai.functions";
+import { transcribeAudio, translateText } from "@/lib/ai.functions";
 import { detectEmergency, formatDateTime, LANGUAGE_NAMES, PATIENT_LANGUAGES } from "@/lib/joji";
 import { startDictation, speak, speechRecognitionSupported } from "@/lib/speech";
 import { takeTranslatePrefill } from "@/lib/translate-prefill";
@@ -77,6 +77,7 @@ import { WorkspaceHeader } from "./workspace-header";
 export function TranslatePage() {
   const { user } = useAuth();
   const translate = useServerFn(translateText);
+  const transcribe = useServerFn(transcribeAudio);
   const [language, setLanguage] = useState("yo");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
@@ -267,6 +268,13 @@ export function TranslatePage() {
     setListening(side);
     stopDictationRef.current = startDictation({
       lang: side === "patient" ? language : "en",
+      transcribe: async (audio, lang) => {
+        const form = new FormData();
+        form.append("audio", audio, "chunk.webm");
+        form.append("lang", lang);
+        const result = await transcribe({ data: form });
+        return result.text;
+      },
       onInterim: setInterim,
       onFinal: (text) => {
         setInterim("");
