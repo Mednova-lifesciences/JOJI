@@ -53,11 +53,6 @@ create unique index organizations_email_domain_key
 
 alter table public.organizations enable row level security;
 
-create policy "Org members can view their own organization"
-  on public.organizations for select
-  to authenticated
-  using ( id = (select organization_id from public.profiles where id = auth.uid()) );
-
 alter table public.profiles
   drop column organization,
   drop column org_type,
@@ -72,6 +67,11 @@ set search_path = public
 as $$
   select organization_id from public.profiles where id = auth.uid()
 $$;
+
+create policy "Org members can view their own organization"
+  on public.organizations for select
+  to authenticated
+  using ( id = public.current_organization_id() );
 
 create policy "Org members can view each other's profiles"
   on public.profiles for select
