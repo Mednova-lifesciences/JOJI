@@ -25,7 +25,10 @@ export const Route = createFileRoute("/auth")({
         content: "Log in or create a JOJI workspace for your hospital, NGO or health programme.",
       },
       { property: "og:title", content: "Sign in — JOJI" },
-      { property: "og:description", content: "Access JOJI's multilingual health communication tools." },
+      {
+        property: "og:description",
+        content: "Access JOJI's multilingual health communication tools.",
+      },
     ],
   }),
   component: AuthPage,
@@ -128,11 +131,23 @@ function AuthPage() {
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
-                    <Input id="login-email" name="email" type="email" required placeholder="you@hospital.org" />
+                    <Input
+                      id="login-email"
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="you@hospital.org"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Password</Label>
-                    <Input id="login-password" name="password" type="password" required minLength={6} />
+                    <Input
+                      id="login-password"
+                      name="password"
+                      type="password"
+                      required
+                      minLength={6}
+                    />
                   </div>
                   <Button type="submit" className="w-full" disabled={busy}>
                     {busy && <Loader2 className="size-4 animate-spin" />} Log in
@@ -148,11 +163,23 @@ function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
-                    <Input id="signup-email" name="email" type="email" required placeholder="you@hospital.org" />
+                    <Input
+                      id="signup-email"
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="you@hospital.org"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
-                    <Input id="signup-password" name="password" type="password" required minLength={6} />
+                    <Input
+                      id="signup-password"
+                      name="password"
+                      type="password"
+                      required
+                      minLength={6}
+                    />
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
@@ -177,7 +204,11 @@ function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="organization">Organisation name</Label>
-                    <Input id="organization" name="organization" placeholder="Lagos University Teaching Hospital" />
+                    <Input
+                      id="organization"
+                      name="organization"
+                      placeholder="Lagos University Teaching Hospital"
+                    />
                   </div>
                   <Button type="submit" className="w-full" disabled={busy}>
                     {busy && <Loader2 className="size-4 animate-spin" />} Create workspace

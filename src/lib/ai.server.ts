@@ -33,7 +33,8 @@ async function readResponseText(response: Response) {
     try {
       const event = JSON.parse(payload) as ResponseEvent;
       if (event.type === "response.output_text.delta") output += event.delta ?? "";
-      if (event.type === "response.completed" && !output) output = event.response?.output_text ?? "";
+      if (event.type === "response.completed" && !output)
+        output = event.response?.output_text ?? "";
     } catch {
       // Ignore non-JSON keep-alive lines in the SSE stream.
     }
@@ -78,16 +79,27 @@ async function callModel(instructions: string, input: string): Promise<string> {
     if (response.status !== 429 && response.status < 500) break;
     if (attempt < 2) {
       const retryAfter = Number(response.headers.get("Retry-After"));
-      await wait(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 700 * 2 ** attempt);
+      await wait(
+        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 700 * 2 ** attempt,
+      );
     }
   }
 
   if (!response?.ok) {
     const body = await response?.text().catch(() => "");
-    if (response?.status === 429) throw new Error("Too many AI requests right now. Please wait a moment and try again.");
-    if (response?.status === 402) throw new Error(body || "AI credits are exhausted for this workspace. Please top up to continue.");
-    if (response?.status === 403) throw new Error(body || "AI access is blocked for this workspace. Please contact your workspace admin.");
-    throw new Error(`AI request failed (${response?.status ?? "unknown"}). ${body?.slice(0, 200) ?? ""}`);
+    if (response?.status === 429)
+      throw new Error("Too many AI requests right now. Please wait a moment and try again.");
+    if (response?.status === 402)
+      throw new Error(
+        body || "AI credits are exhausted for this workspace. Please top up to continue.",
+      );
+    if (response?.status === 403)
+      throw new Error(
+        body || "AI access is blocked for this workspace. Please contact your workspace admin.",
+      );
+    throw new Error(
+      `AI request failed (${response?.status ?? "unknown"}). ${body?.slice(0, 200) ?? ""}`,
+    );
   }
 
   const content = await readResponseText(response);
@@ -104,12 +116,26 @@ export async function translateWithAi(text: string, fromLang: string, toLang: st
   );
 }
 
-export async function campaignWithAi(text: string, topic?: string, audience?: string): Promise<CampaignKit> {
+export async function campaignWithAi(
+  text: string,
+  topic?: string,
+  audience?: string,
+): Promise<CampaignKit> {
   const raw = await callModel(
     `You are JOJI, a Nigerian public-health communication assistant built by MedNova Lifesciences. Turn source material into a multilingual campaign kit. Use plain, warm, culturally appropriate language and preserve medical meaning. Return only valid JSON with exactly this shape: {"leaflets":[{"language":"Yorùbá","body":"..."},{"language":"Igbo","body":"..."},{"language":"Hausa","body":"..."},{"language":"Nigerian Pidgin","body":"..."}],"radioScript":"...","whatsapp":"...","sms":"...","facebook":"...","chwScript":"..."}. Write each leaflet fully in its stated language, including a title, 3-5 key points and a call to action. Write the other fields in English, with sms under 160 characters.`,
-    [topic ? `Topic: ${topic}` : "", audience ? `Audience: ${audience}` : "", "Source material:", text].filter(Boolean).join("\n"),
+    [
+      topic ? `Topic: ${topic}` : "",
+      audience ? `Audience: ${audience}` : "",
+      "Source material:",
+      text,
+    ]
+      .filter(Boolean)
+      .join("\n"),
   );
-  const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const cleaned = raw
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "")
+    .trim();
   try {
     return JSON.parse(cleaned) as CampaignKit;
   } catch {

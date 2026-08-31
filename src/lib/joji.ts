@@ -35,16 +35,40 @@ export const ORG_TYPES = ["Hospital", "NGO", "Pharma/CRO", "Government", "Other"
 /** Best-effort emergency phrase detection across supported languages. */
 const EMERGENCY_TERMS = [
   // English
-  "chest pain", "can't breathe", "cannot breathe", "not breathing", "bleeding heavily",
-  "unconscious", "suicide", "kill myself", "seizure", "convulsion", "stroke",
+  "chest pain",
+  "can't breathe",
+  "cannot breathe",
+  "not breathing",
+  "bleeding heavily",
+  "unconscious",
+  "suicide",
+  "kill myself",
+  "seizure",
+  "convulsion",
+  "stroke",
   // Yorùbá
-  "àyà mi ń dùn", "aya mi n dun", "mi ò lè mí", "mi o le mi", "ẹ̀jẹ̀ ń jáde", "eje n jade",
+  "àyà mi ń dùn",
+  "aya mi n dun",
+  "mi ò lè mí",
+  "mi o le mi",
+  "ẹ̀jẹ̀ ń jáde",
+  "eje n jade",
   // Igbo
-  "obi na-egbu", "enweghị ike iku ume", "enweghi ike iku ume", "ọbara na-agba", "obara na-agba",
+  "obi na-egbu",
+  "enweghị ike iku ume",
+  "enweghi ike iku ume",
+  "ọbara na-agba",
+  "obara na-agba",
   // Hausa
-  "ciwon kirji", "ba na iya numfashi", "jini yana zuba", "suma",
+  "ciwon kirji",
+  "ba na iya numfashi",
+  "jini yana zuba",
+  "suma",
   // Pidgin
-  "my chest dey pain", "i no fit breathe", "blood dey rush", "i wan kill myself",
+  "my chest dey pain",
+  "i no fit breathe",
+  "blood dey rush",
+  "i wan kill myself",
 ];
 
 export function detectEmergency(text: string): boolean {
@@ -97,12 +121,36 @@ export type Vaccine = { name: string; protects: string; offsetWeeks: number };
 
 /** Nigeria NPHCDA routine immunisation schedule (simplified). */
 export const NPHCDA_SCHEDULE: Vaccine[] = [
-  { name: "BCG, OPV 0, Hepatitis B 0", protects: "Tuberculosis, polio, hepatitis B", offsetWeeks: 0 },
-  { name: "Pentavalent 1, OPV 1, PCV 1, Rotavirus 1", protects: "DPT-HepB-Hib, polio, pneumococcus, rotavirus", offsetWeeks: 6 },
-  { name: "Pentavalent 2, OPV 2, PCV 2, Rotavirus 2", protects: "DPT-HepB-Hib, polio, pneumococcus, rotavirus", offsetWeeks: 10 },
-  { name: "Pentavalent 3, OPV 3, PCV 3, IPV", protects: "DPT-HepB-Hib, polio, pneumococcus", offsetWeeks: 14 },
-  { name: "Vitamin A 1, Malaria vaccine (where available)", protects: "Nutrition, malaria", offsetWeeks: 26 },
-  { name: "Measles 1, Yellow Fever, Meningitis A", protects: "Measles, yellow fever, meningitis", offsetWeeks: 39 },
+  {
+    name: "BCG, OPV 0, Hepatitis B 0",
+    protects: "Tuberculosis, polio, hepatitis B",
+    offsetWeeks: 0,
+  },
+  {
+    name: "Pentavalent 1, OPV 1, PCV 1, Rotavirus 1",
+    protects: "DPT-HepB-Hib, polio, pneumococcus, rotavirus",
+    offsetWeeks: 6,
+  },
+  {
+    name: "Pentavalent 2, OPV 2, PCV 2, Rotavirus 2",
+    protects: "DPT-HepB-Hib, polio, pneumococcus, rotavirus",
+    offsetWeeks: 10,
+  },
+  {
+    name: "Pentavalent 3, OPV 3, PCV 3, IPV",
+    protects: "DPT-HepB-Hib, polio, pneumococcus",
+    offsetWeeks: 14,
+  },
+  {
+    name: "Vitamin A 1, Malaria vaccine (where available)",
+    protects: "Nutrition, malaria",
+    offsetWeeks: 26,
+  },
+  {
+    name: "Measles 1, Yellow Fever, Meningitis A",
+    protects: "Measles, yellow fever, meningitis",
+    offsetWeeks: 39,
+  },
   { name: "Measles 2, Vitamin A 2", protects: "Measles, nutrition", offsetWeeks: 65 },
 ];
 
