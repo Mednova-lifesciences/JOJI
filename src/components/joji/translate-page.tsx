@@ -118,6 +118,7 @@ export function TranslatePage() {
   useEffect(() => {
     if (!activeConversation) return;
     let reconnectToastShown = false;
+    let torndown = false;
     const unsubscribe = subscribeToConversationMessages(
       activeConversation.id,
       (incoming) => {
@@ -130,6 +131,7 @@ export function TranslatePage() {
         });
       },
       (connected) => {
+        if (torndown) return;
         if (!connected) {
           reconnectToastShown = true;
           toast.error("Live sync lost — reconnecting…", { id: "realtime-status" });
@@ -139,12 +141,18 @@ export function TranslatePage() {
         }
       },
     );
-    return unsubscribe;
+    return () => {
+      torndown = true;
+      unsubscribe();
+    };
   }, [activeConversation]);
 
   const patientName = LANGUAGE_NAMES[language] ?? language;
 
   async function openConversation(conversation: Conversation) {
+    stopDictationRef.current?.();
+    setListening(null);
+    setInterim("");
     setActiveConversation(conversation);
     setLanguage(conversation.patientLanguage);
     setMessages([]);
@@ -160,6 +168,9 @@ export function TranslatePage() {
   async function handleCreateChat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user) return;
+    stopDictationRef.current?.();
+    setListening(null);
+    setInterim("");
     const form = new FormData(event.currentTarget);
     const title = String(form.get("title") ?? "").trim();
     if (!title) return;
@@ -186,6 +197,9 @@ export function TranslatePage() {
       await deleteConversation(id);
       setConversations((current) => current.filter((conversation) => conversation.id !== id));
       if (activeConversation?.id === id) {
+        stopDictationRef.current?.();
+        setListening(null);
+        setInterim("");
         setActiveConversation(null);
         setMessages([]);
       }
@@ -199,8 +213,6 @@ export function TranslatePage() {
     if (!activeConversation || !user) return;
     const text = (draft ?? (side === "patient" ? patientDraft : doctorDraft)).trim();
     if (!text || busy) return;
-    if (side === "patient") setPatientDraft("");
-    else setDoctorDraft("");
     setBusy(side);
     try {
       const inserted = await insertMessage({
@@ -210,6 +222,8 @@ export function TranslatePage() {
         lang: side === "patient" ? language : "en",
         createdBy: user.id,
       });
+      if (side === "patient") setPatientDraft("");
+      else setDoctorDraft("");
       setMessages((current) => [...current, inserted]);
       const result = await translate({
         data: {
@@ -231,6 +245,11 @@ export function TranslatePage() {
     }
   }
 
+  const sendRef = useRef(send);
+  useEffect(() => {
+    sendRef.current = send;
+  });
+
   function toggleDictation(side: "patient" | "doctor") {
     if (!activeConversation) {
       toast.error("Start a new chat first.");
@@ -251,7 +270,7 @@ export function TranslatePage() {
       onInterim: setInterim,
       onFinal: (text) => {
         setInterim("");
-        void send(side, text);
+        void sendRef.current(side, text);
       },
       onError: (message) => toast.error(message),
       onEnd: () => {

@@ -92,8 +92,9 @@ export async function createConversation(input: {
 }
 
 export async function deleteConversation(id: string): Promise<void> {
-  const { error } = await supabase.from("conversations").delete().eq("id", id);
+  const { data, error } = await supabase.from("conversations").delete().eq("id", id).select("id");
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error("Could not delete this chat.");
 }
 
 export async function listMessages(conversationId: string): Promise<ConversationMessage[]> {
@@ -133,11 +134,13 @@ export async function insertMessage(input: {
 }
 
 export async function updateMessageTranslation(id: string, translatedText: string): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("messages")
     .update({ translated_text: translatedText })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error("Could not save the translation.");
 }
 
 export function subscribeToConversationMessages(
