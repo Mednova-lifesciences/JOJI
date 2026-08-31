@@ -88,6 +88,15 @@ export function formatDate(date: Date) {
   return date.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
 }
 
+export function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString("en-NG", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /** Naegele's rule: EDD = LMP + 280 days. */
 export function pregnancyFromLmp(lmp: Date) {
   const edd = addDays(lmp, 280);
