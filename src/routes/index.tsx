@@ -22,10 +22,14 @@ export const Route = createFileRoute("/")({
         content:
           "JOJI helps Nigerian hospitals, NGOs and health workers speak with every patient in Yorùbá, Igbo, Hausa and Nigerian Pidgin.",
       },
-      { property: "og:title", content: "JOJI — Africa's multilingual health communication platform" },
+      {
+        property: "og:title",
+        content: "JOJI — Africa's multilingual health communication platform",
+      },
       {
         property: "og:description",
-        content: "Real-time translation, campaign kits and maternal health tools built for Nigeria.",
+        content:
+          "Real-time translation, campaign kits and maternal health tools built for Nigeria.",
       },
     ],
   }),
@@ -132,7 +136,9 @@ function Landing() {
               </div>
               <div className="animate-rise rounded-2xl rounded-tr-sm bg-emerald/20 p-4">
                 <p className="label-mono text-cream/70">Doctor · English</p>
-                <p className="mt-1.5 text-cream">We'll run a malaria test now. Have you eaten today?</p>
+                <p className="mt-1.5 text-cream">
+                  We'll run a malaria test now. Have you eaten today?
+                </p>
               </div>
             </div>
             <p className="mt-6 text-xs text-cream/60">
@@ -160,7 +166,10 @@ function Landing() {
         </h2>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {PRODUCTS.map((p) => (
-            <article key={p.name} className="surface p-7 transition-shadow hover:shadow-[var(--shadow-lift)]">
+            <article
+              key={p.name}
+              className="surface p-7 transition-shadow hover:shadow-[var(--shadow-lift)]"
+            >
               <span className="grid size-11 place-items-center rounded-xl bg-secondary text-teal">
                 <p.icon className="size-5" />
               </span>
@@ -189,8 +198,12 @@ function Landing() {
           </div>
           <div className="mt-12 flex flex-col items-start gap-4 rounded-2xl bg-cream/10 p-8 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-semibold text-cream">Start speaking every patient's language.</h2>
-              <p className="mt-1.5 text-sm text-cream/70">Free to try. No card required for the demo workspace.</p>
+              <h2 className="text-2xl font-semibold text-cream">
+                Start speaking every patient's language.
+              </h2>
+              <p className="mt-1.5 text-sm text-cream/70">
+                Free to try. No card required for the demo workspace.
+              </p>
             </div>
             <Button asChild size="lg" variant="secondary">
               <Link to="/auth">

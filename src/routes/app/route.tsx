@@ -18,9 +18,15 @@ export const Route = createFileRoute("/app")({
   head: () => ({
     meta: [
       { title: "Workspace — JOJI" },
-      { name: "description", content: "JOJI workspace: translate, campaigns and maternal health tools." },
+      {
+        name: "description",
+        content: "JOJI workspace: translate, campaigns and maternal health tools.",
+      },
       { property: "og:title", content: "Workspace — JOJI" },
-      { property: "og:description", content: "Multilingual health communication tools for your team." },
+      {
+        property: "og:description",
+        content: "Multilingual health communication tools for your team.",
+      },
     ],
   }),
   component: AppShell,
@@ -88,7 +94,9 @@ function AppShell() {
               to={item.to}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3.5 py-3 transition-colors",
-                active ? "bg-cream/15 text-cream" : "text-cream/70 hover:bg-cream/10 hover:text-cream",
+                active
+                  ? "bg-cream/15 text-cream"
+                  : "text-cream/70 hover:bg-cream/10 hover:text-cream",
               )}
             >
               <item.icon className="size-4.5 shrink-0" />
@@ -132,7 +140,11 @@ function AppShell() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur lg:hidden">
-          <button onClick={() => setOpen(true)} className="rounded-lg p-2 hover:bg-secondary" aria-label="Open menu">
+          <button
+            onClick={() => setOpen(true)}
+            className="rounded-lg p-2 hover:bg-secondary"
+            aria-label="Open menu"
+          >
             <Menu className="size-5" />
           </button>
           <p className="font-display text-base font-semibold">JOJI</p>
