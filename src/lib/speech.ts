@@ -56,7 +56,7 @@ export function startDictation(opts: {
 
   const recognition = new Ctor();
   recognition.lang = SPEECH_LOCALES[opts.lang] ?? "en-NG";
-  recognition.continuous = false;
+  recognition.continuous = true;
   recognition.interimResults = true;
 
   recognition.onresult = (event: SpeechResultEvent) => {
