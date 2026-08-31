@@ -1,6 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
-import { ArrowLeft, Loader2, MessageSquareQuote, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  MessageSquareQuote,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,21 +40,25 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const DEMO_EMAIL = "laioketoluwani16@gmail.com";
+const DEMO_PASSWORD = "JojiDemo2026!";
+
 function AuthPage() {
   const navigate = useNavigate();
   const { user, ready, signIn, signUp } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<"login" | "signup">("login");
+  const loginEmailRef = useRef<HTMLInputElement>(null);
+  const loginPasswordRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (ready && user) navigate({ to: "/app/translate", replace: true });
   }, [ready, user, navigate]);
 
-  async function handleLogin(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
+  async function doLogin(email: string, password: string) {
     setBusy(true);
     try {
-      await signIn(String(form.get("email")), String(form.get("password")));
+      await signIn(email, password);
       toast.success("Welcome back to JOJI");
       navigate({ to: "/app/translate" });
     } catch (err) {
@@ -56,6 +66,21 @@ function AuthPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleLogin(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    await doLogin(String(form.get("email")), String(form.get("password")));
+  }
+
+  async function handleDemoLogin() {
+    if (busy) return;
+    setTab("login");
+    if (loginEmailRef.current) loginEmailRef.current.value = DEMO_EMAIL;
+    if (loginPasswordRef.current) loginPasswordRef.current.value = DEMO_PASSWORD;
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    await doLogin(DEMO_EMAIL, DEMO_PASSWORD);
   }
 
   async function handleSignup(e: FormEvent<HTMLFormElement>) {
@@ -125,7 +150,7 @@ function AuthPage() {
               Sign in, or create a workspace for your organisation.
             </p>
 
-            <Tabs defaultValue="login" className="mt-6">
+            <Tabs value={tab} onValueChange={(value) => setTab(value as "login" | "signup")} className="mt-6">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="signup">Sign up</TabsTrigger>
@@ -141,6 +166,7 @@ function AuthPage() {
                       type="email"
                       required
                       placeholder="you@hospital.org"
+                      ref={loginEmailRef}
                     />
                   </div>
                   <div className="space-y-2">
@@ -151,6 +177,7 @@ function AuthPage() {
                       type="password"
                       required
                       minLength={6}
+                      ref={loginPasswordRef}
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={busy}>
@@ -220,6 +247,30 @@ function AuthPage() {
                 </form>
               </TabsContent>
             </Tabs>
+
+            <div className="mt-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="label-mono text-muted-foreground">Or try it live</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void handleDemoLogin()}
+              disabled={busy}
+              className="mt-4 flex w-full items-center gap-3 rounded-xl border border-border bg-secondary/40 p-4 text-left transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-teal/15 font-display text-lg font-semibold text-teal">
+                D
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">Dr. Damilare</span>
+                <span className="label-mono block text-muted-foreground">
+                  Tap to sign in with a live demo account
+                </span>
+              </span>
+              <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+            </button>
           </div>
         </div>
       </main>
