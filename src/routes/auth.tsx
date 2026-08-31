@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, Loader2, MessageSquareQuote, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ function AuthPage() {
     if (ready && user) navigate({ to: "/app/translate", replace: true });
   }, [ready, user, navigate]);
 
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setBusy(true);
@@ -55,7 +55,7 @@ function AuthPage() {
     }
   }
 
-  async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSignup(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setBusy(true);
