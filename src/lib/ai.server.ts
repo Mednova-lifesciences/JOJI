@@ -100,13 +100,6 @@ async function callModel(instructions: string, input: string): Promise<string> {
   return content;
 }
 
-const TRANSCRIBE_LANGUAGE_HINTS: Record<string, string> = {
-  en: "en",
-  yo: "yo",
-  ig: "ig",
-  ha: "ha",
-};
-
 export async function transcribeWithAi(audio: Blob, lang?: string): Promise<string> {
   const apiKey = process.env["OPENAI_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured on this server.");
@@ -114,9 +107,14 @@ export async function transcribeWithAi(audio: Blob, lang?: string): Promise<stri
   const form = new FormData();
   const ext = audio.type.includes("mp4") ? "mp4" : audio.type.includes("ogg") ? "ogg" : "webm";
   form.append("file", audio, `chunk.${ext}`);
-  form.append("model", "gpt-4o-mini-transcribe");
-  const hint = lang ? TRANSCRIBE_LANGUAGE_HINTS[lang] : undefined;
-  if (hint) form.append("language", hint);
+  form.append("model", "gpt-4o-transcribe");
+  // gpt-4o-transcribe's `language` param only recognizes a narrow enum of ISO codes and
+  // 400s on others (e.g. "yo"), so bias it with a plain-language prompt instead — OpenAI's
+  // own error for unrecognized codes suggests exactly this.
+  const languageName = lang ? (LANGUAGE_NAMES[lang] ?? lang) : undefined;
+  if (languageName) {
+    form.append("prompt", `The audio is in ${languageName}. Transcribe it verbatim in ${languageName}.`);
+  }
 
   const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
     method: "POST",
