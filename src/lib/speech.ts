@@ -3,21 +3,27 @@
  */
 import { SPEECH_LOCALES } from "./joji";
 
+type SpeechResultLike = { isFinal: boolean; 0: { transcript: string } };
+type SpeechResultEvent = { resultIndex: number; results: ArrayLike<SpeechResultLike> };
+type SpeechErrorEvent = { error?: string };
 type RecognitionLike = {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((event: any) => void) | null;
-  onerror: ((event: any) => void) | null;
+  onresult: ((event: SpeechResultEvent) => void) | null;
+  onerror: ((event: SpeechErrorEvent) => void) | null;
   onend: (() => void) | null;
 };
 
 function getRecognitionCtor(): (new () => RecognitionLike) | null {
   if (typeof window === "undefined") return null;
-  const w = window as any;
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+  const speechWindow = window as Window & {
+    SpeechRecognition?: new () => RecognitionLike;
+    webkitSpeechRecognition?: new () => RecognitionLike;
+  };
+  return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
 }
 
 export function speechRecognitionSupported() {
@@ -53,7 +59,7 @@ export function startDictation(opts: {
   recognition.continuous = false;
   recognition.interimResults = true;
 
-  recognition.onresult = (event: any) => {
+  recognition.onresult = (event: SpeechResultEvent) => {
     let interim = "";
     for (let i = event.resultIndex; i < event.results.length; i += 1) {
       const result = event.results[i];
@@ -62,8 +68,8 @@ export function startDictation(opts: {
     }
     if (interim) opts.onInterim?.(interim);
   };
-  recognition.onerror = (event: any) => {
-    const code = event?.error ?? "unknown";
+  recognition.onerror = (event: SpeechErrorEvent) => {
+    const code = event.error ?? "unknown";
     opts.onError?.(
       code === "not-allowed"
         ? "Microphone access was blocked. Enable it in your browser settings."
